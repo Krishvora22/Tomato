@@ -1,0 +1,60 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+enum STATUS {
+  ENABLED
+  DISABLED
+}
+
+model User {
+  id         String   @id @default(uuid())
+  fristName  String
+  LastName   String
+  email      String   @unique
+  password   String
+  cartData   Json?              // Example: { foodId1: 2, foodId2: 1 }
+
+  orders     Order[]
+
+  status     STATUS   @default(ENABLED)
+  isDeleted  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Food {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  image       String?
+  category    String
+
+  status      STATUS   @default(ENABLED)
+  isDeleted   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Order {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  items     Json              // Example: [ { foodId, name, qty, price } ]
+  amount    Float             // total
+  address   Json              // Example: { address, city, postalCode }
+  status    String   @default("Food Processing")
+  payment   Boolean  @default(false)
+  date      DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
