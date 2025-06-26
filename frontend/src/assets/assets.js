@@ -118,7 +118,7 @@ export const menu_list = [
 
 export const food_list = [
     {
-        _id: "1",
+        _id: "19d475dd-4697-4e39-9d09-eb2041fa9199",
         name: "Greek salad",
         image: food_1,
         price: 12,

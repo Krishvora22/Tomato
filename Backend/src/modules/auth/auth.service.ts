@@ -48,30 +48,42 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const { email, password } = loginDto;
+  const { email, password } = loginDto;
 
-    const user = await this.userCoreService.findFirst({
-      where: { email, isDeleted: false },
-    });
+  // Check if user exists
+  const user = await this.userCoreService.findFirst({
+    where: { email, isDeleted: false },
+  });
 
-    if (!user) {
-      throw new BadRequestException(userMessages.USER_NOT_FOUND);
-    }
-
-    if (!user.password) {
-      throw new BadRequestException(passwordMessages.PASSWORD_SETUP);
-    }
-
-    const isMatch = await compare(password, user.password);
-
-    if (!isMatch) {
-      throw new BadRequestException(authMessages.INVALID_TOKEN);
-    }
-
-    const authToken = this.jwtService.sign({ id: user.id });
-
-    return { user, authToken };
+  if (!user) {
+    throw new BadRequestException('User does not exist with this email.');
   }
+
+  // Check if password is set (in case user registered via OAuth etc.)
+  if (!user.password) {
+    throw new BadRequestException('Password not set. Please reset your password.');
+  }
+
+  // Validate password
+  const isMatch = await compare(password, user.password);
+
+  if (!isMatch) {
+    throw new BadRequestException('Incorrect password. Please try again.');
+  }
+
+  // Generate JWT token
+  const authToken = this.jwtService.sign({ id: user.id });
+
+  // Don't return password
+  const { password: _, ...safeUser } = user;
+
+  return {
+    message: 'Login successful',
+    user: safeUser,
+    authToken,
+  };
+}
+
 
   async resetPassword(loginDto: LoginDto) {
     const { email, password } = loginDto;
