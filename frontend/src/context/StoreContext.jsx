@@ -1,83 +1,108 @@
-import { createContext , useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { food_list } from "../assets/assets";
 import { addToCartAPI } from "../../service/cart.api";
 
 export const StoreContext = createContext(null);
 
 const StoreContextProvider = (props) => {
+  // Load cart from localStorage or empty
+  const [cartItems, setCartItems] = useState(() => {
+    const savedCart = localStorage.getItem("cartItems");
+    return savedCart ? JSON.parse(savedCart) : {};
+  });
 
-     const [cartItems, setCartItems] = useState({});
-        const [discount, setDiscount] = useState(0);
-          const [isLoggedIn, setIsLoggedIn] = useState(false);
-          const [user, setUser] = useState(null); // store user info
+  const [discount, setDiscount] = useState(() => {
+    const savedDiscount = localStorage.getItem("discount");
+    return savedDiscount ? parseInt(savedDiscount) : 0;
+  });
 
-
-
-     
-    const addToCart = async (itemId) => {
-  const userId = localStorage.getItem("userId");
-  console.log("userid" + userId);
-  console.log("item id" + itemId)
-  setCartItems((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
-  try {
-    await addToCartAPI({ userId, foodId: itemId }); // ✅ Correct call
-  } catch (err) {
-    console.error("Add to cart failed", err);
-  }
-};
+  // const [isLoggedIn, setIsLoggedIn] = useState(() => {
+  //   return !!localStorage.getItem("userId");
+  // });
+    const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    const savedUser = localStorage.getItem("user");
+    return !!savedUser;
+  });
 
 
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
-    const removeFromCart = async (itemId) => {
-        setCartItems((prev)=>({...prev,[itemId]:prev[itemId]-1}))
+  // 🔁 Sync to localStorage on change
+  useEffect(() => {
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  useEffect(() => {
+    localStorage.setItem("discount", discount.toString());
+  }, [discount]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("user", JSON.stringify(user));
+    }
+  }, [user]);
+
+  const addToCart = async (itemId) => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      alert("Please login to add items to cart.");
+      return;
     }
 
-    const getTotalCartAmount = () => {
-  let totalAmount = 0;
+    setCartItems((prev) => ({
+      ...prev,
+      [itemId]: (prev[itemId] || 0) + 1,
+    }));
 
-  for (const item in cartItems) {
-    if (cartItems[item] > 0) {
-      const itemInfo = food_list.find((product) => product._id === item);
+    try {
+      await addToCartAPI({ userId, foodId: itemId });
+    } catch (err) {
+      console.error("Add to cart failed", err);
+    }
+  };
 
-      if (itemInfo) {
-        totalAmount += itemInfo.price * cartItems[item];
-      } else {
-        console.warn(`Product not found for item id: ${item}`);
+  const removeFromCart = (itemId) => {
+    setCartItems((prev) => ({
+      ...prev,
+      [itemId]: prev[itemId] > 1 ? prev[itemId] - 1 : 0,
+    }));
+  };
+
+  const getTotalCartAmount = () => {
+    let total = 0;
+    for (const itemId in cartItems) {
+      const quantity = cartItems[itemId];
+      const food = food_list.find((f) => f._id === itemId);
+      if (food) {
+        total += food.price * quantity;
       }
     }
-  }
+    return total;
+  };
 
-  return totalAmount;
+  const contextValue = {
+    food_list,
+    cartItems,
+    setCartItems,
+    addToCart,
+    removeFromCart,
+    getTotalCartAmount,
+    discount,
+    setDiscount,
+    isLoggedIn,
+    setIsLoggedIn,
+    user,
+    setUser,
+  };
+
+  return (
+    <StoreContext.Provider value={contextValue}>
+      {props.children}
+    </StoreContext.Provider>
+  );
 };
 
-
-    useEffect(()=>{
-     console.log(cartItems);
-    }, [cartItems])
-
-
-      const contextValue = {
-        food_list,
-         cartItems,
-         setCartItems,
-         addToCart,
-        removeFromCart,
-        getTotalCartAmount,
-        discount,
-        setDiscount,
-        isLoggedIn,
-    setIsLoggedIn,
-      user,
-  setUser,
-
-    };
-
-    return (
-        <StoreContext.Provider value={contextValue}>
-            {props.children}
-        </StoreContext.Provider>
-    );
-
-
-}
 export default StoreContextProvider;
