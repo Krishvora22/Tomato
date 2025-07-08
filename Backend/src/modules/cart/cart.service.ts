@@ -30,8 +30,8 @@ export class CartService {
     const food = await this.foodcoreservice.findFirst({
       where: {
         id: foodId,
-        isDeleted: false,
         status: 'ENABLED',
+        isDeleted: false,
       },
     });
 
@@ -45,8 +45,12 @@ export class CartService {
 
     // 4. Update cartData in user
     await this.usercoreservice.update({
-      where: { id: userId },
-      data: { cartData },
+      where: { 
+          id: userId
+      },
+      data: { 
+        cartData 
+      },
     });
 
     return {
