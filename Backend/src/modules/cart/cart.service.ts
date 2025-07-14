@@ -30,7 +30,6 @@ export class CartService {
     const food = await this.foodcoreservice.findFirst({
       where: {
         id: foodId,
-        status: 'ENABLED',
         isDeleted: false,
       },
     });
